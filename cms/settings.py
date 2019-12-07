@@ -107,9 +107,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
 
-LANGUAGE_CODE = 'zh-Hans'
+LANGUAGE_CODE = 'zh-hant'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'ASIA/Taipei'
 
 USE_I18N = True
 
@@ -122,6 +122,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = 'root_static'
 
 # ckeditor
 #CKEDITOR_JQUERY_URL ='https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js'
@@ -138,7 +139,7 @@ CKEDITOR_CONFIGS = {
             ['Source', '-', 'Bold', 'Italic']
         ],
         'toolbar_Full': [
-            [ 'Source','-','Save','NewPage','DocProps','Preview','Print','-','Templates' ],
+            [ 'Source','-','Save','NewPage','DocProps','Preview','-','Templates' ],
             [ 'Cut','Copy','Paste','PasteText','PasteFromWord','-','Undo','Redo' ],
 
             [ 'Find','Replace','-','SelectAll','-','SpellChecker', 'Scayt' ],
@@ -147,7 +148,7 @@ CKEDITOR_CONFIGS = {
             [ 'Bold','Italic','Underline','Strike','Subscript','Superscript','-','RemoveFormat' ],
             [ 'NumberedList','BulletedList','-','Outdent','Indent','-','Blockquote','CreateDiv', '-','JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock','-','BidiLtr','BidiRtl' ],
             [ 'Link','Unlink','Anchor' ],
-            [ 'Image','Flash','Table','HorizontalRule','Smiley','SpecialChar','PageBreak','Iframe' ],
+            [ 'Image','Table','HorizontalRule','Smiley','SpecialChar','PageBreak','Iframe' ],
             '/',
             [ 'Styles','Format','Font','FontSize' ] ,
             [ 'TextColor','BGColor' ] ,
