@@ -133,12 +133,16 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = 'static'
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'common_static'),
+)
+
 
 # ckeditor
 #CKEDITOR_JQUERY_URL ='https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js'
-MEDIA_URL = 'media/'
 # 放在django 專案根目录，同时也需要新建media資料夾
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = 'media/'
 CKEDITOR_UPLOAD_PATH = 'upload/'
 CKEDITOR_IMAGE_BACKEND = 'pillow'
 
