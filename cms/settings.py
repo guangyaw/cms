@@ -25,7 +25,7 @@ SECRET_KEY = '(a+916@*vd2n(a04l3mu)(09bln$qex&^zq@0dsri5(=^kv)br'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['cms.twshop.asia', ]
+ALLOWED_HOSTS = ['cms.twshop.asia', '127.0.0.1']
 
 
 # Application definition
@@ -77,22 +77,22 @@ WSGI_APPLICATION = 'cms.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
-#DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.sqlite3',
-#        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#    }
-#}
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'guangyaw_django',                       # Or path to database file if using sqlite3.
-        'USER': 'guangyaw_dxyaw',                       # Not used with sqlite3.
-        'PASSWORD': 'password',               # Not used with sqlite3.
-        'HOST': '',                           # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '',                           # Set to empty string for default. Not used with sqlite3.
-    }
+   'default': {
+       'ENGINE': 'django.db.backends.sqlite3',
+       'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+   }
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+#         'NAME': 'guangyaw_django',                       # Or path to database file if using sqlite3.
+#         'USER': 'guangyaw_dxyaw',                       # Not used with sqlite3.
+#         'PASSWORD': 'password',               # Not used with sqlite3.
+#         'HOST': '',                           # Set to empty string for localhost. Not used with sqlite3.
+#         'PORT': '',                           # Set to empty string for default. Not used with sqlite3.
+#     }
+# }
 
 
 # Password validation
