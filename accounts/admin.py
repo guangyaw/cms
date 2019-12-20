@@ -12,7 +12,7 @@ class BlogPostAdmin(admin.ModelAdmin):
 
 
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "phone_no", )
+    list_display = ("user", "phone_no", "api_key", "secret_no")
 
 
 class ClassificationAdmin(admin.ModelAdmin):
