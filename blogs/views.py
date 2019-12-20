@@ -3,7 +3,6 @@ import requests
 from accounts.models import Profile
 
 
-# Create your views here.
 def home(request):
     my_profile = Profile.objects.get(user__username='guangyaw')
     session = requests.session()
