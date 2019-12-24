@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'ckeditor',
     'ckeditor_uploader',
     'accounts',
-    'blogs'
+    'blogs',
+    'django_q'
 ]
 
 MIDDLEWARE = [
@@ -174,4 +175,14 @@ CKEDITOR_CONFIGS = {
         'toolbar': 'Full',
         'extraPlugins': 'codesnippet',   #代码段插件
     }
+}
+
+Q_CLUSTER = {
+    'name': 'DjangORM',
+    'workers': 1,
+    'timeout': 1800,
+    'retry': 120,
+    'queue_limit': 50,
+    'bulk': 10,
+    'orm': 'default'
 }
