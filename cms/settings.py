@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'ckeditor_uploader',
     'accounts',
     'blogs',
-    'django_q'
+    'django_q',
+    'coins'
 ]
 
 MIDDLEWARE = [

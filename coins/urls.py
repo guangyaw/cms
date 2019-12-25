@@ -13,15 +13,13 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib.auth import views as auth_view
-from django.urls import path
-from accounts.views import home, user_login
 
-app_name = 'accounts'
+from django.urls import path
+from coins.views import coin_home, ethbtc_sell, ethbtc_buy, order_check
 
 urlpatterns = [
-    path('', home, name='home'),
-    path('login/', user_login, name='user_login'),
-    #path('login/', auth_view.LoginView.as_view(template_name='accounts/login.html'), name='user_login'),
-    path('logout/', auth_view.LogoutView.as_view(template_name='accounts/logout.html'), name='user_logout'),
+    path('', coin_home, name='coin_home'),
+    path('sample_sell/', ethbtc_sell, name='ethbtc_sell'),
+    path('sample_buy/', ethbtc_buy, name='ethbtc_buy'),
+    path('order_check/', order_check, name='order_check'),
 ]

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block meta_block %}
+{% endblock %}
+
+{% block title_block %}
+    {{title}}
+{% endblock %}
+
+{% block body_block %}
+    <div>Best price: {{ best_price }}</div>
+    <div>Best bit: {{ best_bid }}  , Best ask: {{ best_ask }} </div>
+    <div>next index: {{ count }}</div>
+    {% for x in best_values %}
+    <div>Bests: {{ x.best_price }}</div>
+    {% endfor %}
+    <div>---{{ title }}---</div>
+    <div>{{ order }}</div>
+{% endblock %}
