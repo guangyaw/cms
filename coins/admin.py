@@ -3,7 +3,7 @@ from coins.models import TradeRecord, BestValues, PreOrder
 
 
 class TradeRecordAdmin(admin.ModelAdmin):
-    list_display = ('symbol', 'side', 'quantity', 'price', 'fee', 'timestamp')
+    list_display = ('symbol', 'side', 'quantity', 'price', 'now_status', 'wait_counter', 'fee', 'timestamp')
     list_filter = ("symbol",)
     search_fields = ("symbol", "timestamp")
     ordering = ("-timestamp", "symbol")

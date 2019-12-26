@@ -22,6 +22,8 @@ class TradeRecord(models.Model):
     quantity = models.CharField(max_length=30, default='', blank=True)
     price = models.CharField(max_length=30, default='', blank=True)
     fee = models.CharField(max_length=30, default='', blank=True)
+    now_status = models.CharField(max_length=30, default='default', blank=True)
+    wait_counter = models.IntegerField(default='0', blank=True)
     timestamp = models.DateTimeField(default=timezone.now)
 
     def __str__(self):

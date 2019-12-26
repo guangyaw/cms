@@ -15,7 +15,7 @@ Including another URLconf
 """
 
 from django.urls import path
-from coins.views import coin_home, ethbtc_sell, ethbtc_buy, order_check, auto_trade_start, auto_trade_stop, check_open
+from coins.views import coin_home, ethbtc_sell, ethbtc_buy, order_check, auto_trade_start, auto_trade_stop#, check_open
 
 urlpatterns = [
     path('', coin_home, name='coin_home'),
@@ -24,5 +24,5 @@ urlpatterns = [
     path('order_check/', order_check, name='order_check'),
     path('auto_trade_start/', auto_trade_start, name='auto_trade_start'),
     path('auto_trade_stop/', auto_trade_stop, name='auto_trade_stop'),
-    path('check_open/', check_open, name='check_open'),
+    #path('check_open/', check_open, name='check_open'),
 ]
