@@ -135,7 +135,7 @@ def check_open_and_auto_trade():
                     g_balance = eth_balance
                     client_order_id = uuid.uuid4().hex
 
-                    order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][3]['price'])) / 2
+                    order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][5]['price'])) / 2
                     best_price = Decimal(order_avg)
 
                     btc_balance_toETH = round(btc_balance / float(best_price), 4) - float(eth_btc['quantityIncrement'])
@@ -200,13 +200,10 @@ def check_open_and_auto_trade():
                 print(order['error'])
 
     else:
-        for open_order in open_orders:
-            if TradeRecord.objects.filter(clientOrderId=open_order["clientOrderId"]).exists():
-                x = TradeRecord.objects.get(clientOrderId=open_order["clientOrderId"])
-                if x.now_status == 'new' or x.now_status == 'partiallyFilled':
-                    x.wait_counter = x.wait_counter + 1
-                    x.save()
-
+        if TradeRecord.objects.filter(now_status='new').exists():
+            x = TradeRecord.objects.get(now_status='new')
+            x.wait_counter = x.wait_counter + 1
+            x.save()
     return
 
 
