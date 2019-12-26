@@ -1,14 +1,14 @@
 from django.http import HttpResponse
 from django.shortcuts import render
 from accounts.models import Profile
-from coins.models import BestValues
+from coins.models import BestValues, PreOrder
 from coins.models import TradeRecord
 import uuid
 import time
 import requests
 from decimal import *
-from datetime import datetime
-
+from django_q.models import Schedule
+import datetime
 
 class Client(object):
     def __init__(self, url, public_key, secret):
@@ -57,6 +57,10 @@ class Client(object):
 
         return self.session.get("%s/order/%s" % (self.url, client_order_id), params=data).json()
 
+    def get_open_order(self):
+        """Get all open order info."""
+        return self.session.get("%s/order/" % (self.url,)).json()
+
     def cancel_order(self, client_order_id):
         """Cancel order."""
         return self.session.delete("%s/order/%s" % (self.url, client_order_id)).json()
@@ -75,6 +79,63 @@ class Client(object):
     #     return self.session.get("%s/account/transactions/%s" % (self.url, transaction_id)).json()
 
 
+def check_open(request):
+    g_symbol = 'ETHBTC'
+
+    my_profile = Profile.objects.get(user__username='guangyaw')
+    client = Client("https://api.hitbtc.com", my_profile.api_key, my_profile.secret_no)
+    open_order = len(client.get_open_order())
+    if open_order == 0:
+        eth_btc = client.get_symbol(g_symbol)
+        # get trading balance
+        eth_balance = 0.0
+        btc_balance = 0.0
+        balances = client.get_trading_balance()
+        for balance in balances:
+            if balance['currency'] == 'ETH':
+                eth_balance = float(balance['available'])
+            if balance['currency'] == 'BTC':
+                btc_balance = float(balance['available'])
+
+        orderbook = client.get_orderbook(g_symbol)
+        order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][0]['price'])) / 2
+        best_price = Decimal(order_avg)
+
+        btc_balance_toETH = round(btc_balance / float(best_price), 4) - float(eth_btc['quantityIncrement'])
+        print('Current BTC balance in ETH: %s ' % (btc_balance_toETH,))
+        print('Current ETH balance: %s' % eth_balance)
+        if eth_balance > btc_balance_toETH:
+            #sell
+            if eth_balance >= float(eth_btc['quantityIncrement']):
+                client_order_id = uuid.uuid4().hex
+                print("Selling at %s" % best_price)
+
+                order = client.new_order(client_order_id, g_symbol, 'sell', eth_balance, best_price)
+                if 'error' not in order:
+                    if order['status'] == 'filled':
+                        print("Order filled", order)
+                    elif order['status'] == 'new' or order['status'] == 'partiallyFilled':
+                        print("Waiting order...")
+                else:
+                    print(order['error'])
+        else:
+            #buy
+            if btc_balance_toETH >= float(eth_btc['quantityIncrement']):
+                client_order_id = uuid.uuid4().hex
+                print("buy at %s" % best_price)
+
+                order = client.new_order(client_order_id, g_symbol, 'buy', btc_balance_toETH, best_price)
+                if 'error' not in order:
+                    if order['status'] == 'filled':
+                        print("Order filled", order)
+                    elif order['status'] == 'new' or order['status'] == 'partiallyFilled':
+                        print("Waiting order...")
+                else:
+                    print(order['error'])
+
+    return render(request, "blogs/blog_home.html", {"balance": open_order, "title": 'test balance'})
+
+
 def coin_home(request):
     my_profile = Profile.objects.get(user__username='guangyaw')
     session = requests.session()
@@ -86,6 +147,137 @@ def coin_home(request):
             mybalances.append(balances)
 
     return render(request, "blogs/blog_home.html", {"balance": mybalances, "title": 'test balance'})
+
+
+def auto_trade():
+    g_symbol = 'ETHBTC'
+
+    my_profile = Profile.objects.get(user__username='guangyaw')
+    client = Client("https://api.hitbtc.com", my_profile.api_key, my_profile.secret_no)
+    eth_btc = client.get_symbol(g_symbol)
+
+    orderbook = client.get_orderbook(g_symbol)
+    # set
+    order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][0]['price'])) / 2
+    best_price = Decimal(order_avg)
+
+    print('Current price: %s' % (best_price,))
+
+    best_counts = BestValues.objects.all().count()
+    if best_counts < 10:
+        print(type(orderbook["timestamp"]))
+        # tmptime = datetime.strptime(orderbook['bid']["timestamp"].isoformat(), '%Y-%m-%d %H:%M:%S.%f')
+        BestValues.objects.create(symbol=g_symbol, best_price=best_price,
+                                  best_bid=orderbook['bid'][0]['price'],
+                                  best_ask=orderbook['ask'][0]['price'],
+                                  timestamp=datetime.datetime.now())
+    else:
+        check_data = BestValues.objects.get(id=BestValues.objects.all()[0].id)
+        if check_data.start_point == 99:
+            check_data.start_point = 8  # next index
+            check_data.save()
+            tmp = BestValues.objects.get(id=BestValues.objects.all()[9].id)
+        else:
+            tmp = BestValues.objects.get(id=BestValues.objects.all()[check_data.start_point].id)
+
+        tmp.symbol = g_symbol
+        tmp.best_price = best_price
+        tmp.best_bid = orderbook['bid'][0]['price']
+        tmp.best_ask = orderbook['ask'][0]['price']
+        tmp.timestamp = datetime.datetime.now()
+        tmp.save()
+
+        # define next index into BestValues.objects.all()[0]
+        if check_data.start_point == 0:
+            check_data.start_point = 9
+        else:
+            check_data.start_point = check_data.start_point - 1  # next index
+        next_turn = BestValues.objects.get(id=BestValues.objects.all()[0].id)
+        next_turn.start_point = check_data.start_point
+        print(next_turn.start_point)
+        next_turn.save()
+
+
+def auto_trade_start(request):
+    if Schedule.objects.filter(name='send_auto_trade').exists():
+        return HttpResponse('auto trade is exist')
+    else:
+        g_symbol = 'ETHBTC'
+
+        my_profile = Profile.objects.get(user__username='guangyaw')
+        client = Client("https://api.hitbtc.com", my_profile.api_key, my_profile.secret_no)
+        eth_btc = client.get_symbol(g_symbol)
+        # get trading balance
+        eth_balance = 0.0
+        btc_balance = 0.0
+        balances = client.get_trading_balance()
+        for balance in balances:
+            if balance['currency'] == 'ETH':
+                eth_balance = float(balance['available'])
+            if balance['currency'] == 'BTC':
+                btc_balance = float(balance['available'])
+
+        orderbook = client.get_orderbook(g_symbol)
+        order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][0]['price'])) / 2
+        best_price = Decimal(order_avg)
+
+        btc_balance_toETH = round(btc_balance / float(best_price), 4) - float(eth_btc['quantityIncrement'])
+        print('Current BTC balance in ETH: %s ' % (btc_balance_toETH,))
+        print('Current ETH balance: %s' % eth_balance)
+        if btc_balance_toETH > eth_balance:
+            base_amount = btc_balance_toETH
+        else:
+            base_amount = eth_balance
+        PreOrder.objects.create(symbol=g_symbol, base_amount=base_amount, status='running', timestamp=datetime.datetime.now())
+        now = datetime.datetime.now()
+
+        Schedule.objects.create(
+            func='coins.views.auto_trade',
+            name='send_auto_trade',
+            repeats=-1,
+            schedule_type=Schedule.MINUTES,
+            next_run=now + datetime.timedelta(seconds=10)
+        )
+
+        return HttpResponse('auto trade start')
+
+
+def auto_trade_stop(request):
+    if Schedule.objects.filter(name='send_auto_trade').exists():
+        Schedule.objects.get(name='send_auto_trade').delete()
+        g_symbol = 'ETHBTC'
+
+        my_profile = Profile.objects.get(user__username='guangyaw')
+        client = Client("https://api.hitbtc.com", my_profile.api_key, my_profile.secret_no)
+        eth_btc = client.get_symbol(g_symbol)
+        # get trading balance
+        eth_balance = 0.0
+        btc_balance = 0.0
+        balances = client.get_trading_balance()
+        for balance in balances:
+            if balance['currency'] == 'ETH':
+                eth_balance = float(balance['available'])
+            if balance['currency'] == 'BTC':
+                btc_balance = float(balance['available'])
+
+        orderbook = client.get_orderbook(g_symbol)
+        order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][0]['price'])) / 2
+        best_price = Decimal(order_avg)
+
+        btc_balance_toETH = round(btc_balance / float(best_price), 4) - float(eth_btc['quantityIncrement'])
+        print('Current BTC balance in ETH: %s ' % (btc_balance_toETH,))
+        print('Current ETH balance: %s' % eth_balance)
+        if btc_balance_toETH > eth_balance:
+            end_amount = btc_balance_toETH
+        else:
+            end_amount = eth_balance
+        print(end_amount)
+        x = PreOrder.objects.get(status='running')
+        x.status = 'stop'
+        x.end_amount = end_amount
+        x.save()
+
+    return HttpResponse('auto trade stop')
 
 
 def ethbtc_sell(request):
@@ -201,47 +393,47 @@ def order_check(request):
     eth_btc = client.get_symbol(g_symbol)
 
     orderbook = client.get_orderbook(g_symbol)
-    # set
+    # # set
     order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][0]['price'])) / 2
     best_price = Decimal(order_avg)
 
     print('Current price: %s' % (best_price,))
+    #
+    # best_counts = BestValues.objects.all().count()
+    #
+    # if best_counts < 10:
+    #     print(type(orderbook["timestamp"]))
+    #     #tmptime = datetime.strptime(orderbook['bid']["timestamp"].isoformat(), '%Y-%m-%d %H:%M:%S.%f')
+    #     best_values = BestValues.objects.create(symbol=g_symbol, best_price=best_price,
+    #                                                     best_bid=orderbook['bid'][0]['price'],
+    #                                                     best_ask=orderbook['ask'][0]['price'],
+    #                                                     timestamp=datetime.now())
+    # else:
+    #     check_data = BestValues.objects.get(id=BestValues.objects.all()[0].id)
+    #     if check_data.start_point == 99:
+    #         check_data.start_point = 8  # next index
+    #         check_data.save()
+    #         tmp = BestValues.objects.get(id=BestValues.objects.all()[9].id)
+    #     else:
+    #         tmp = BestValues.objects.get(id=BestValues.objects.all()[check_data.start_point].id)
 
-    best_counts = BestValues.objects.all().count()
-
-    if best_counts < 10:
-        print(type(orderbook["timestamp"]))
-        #tmptime = datetime.strptime(orderbook['bid']["timestamp"].isoformat(), '%Y-%m-%d %H:%M:%S.%f')
-        best_values = BestValues.objects.create(symbol=g_symbol, best_price=best_price,
-                                                        best_bid=orderbook['bid'][0]['price'],
-                                                        best_ask=orderbook['ask'][0]['price'],
-                                                        timestamp=datetime.now())
-    else:
-        check_data = BestValues.objects.get(id=BestValues.objects.all()[0].id)
-        if check_data.start_point == 99:
-            check_data.start_point = 8  # next index
-            check_data.save()
-            tmp = BestValues.objects.get(id=BestValues.objects.all()[9].id)
-        else:
-            tmp = BestValues.objects.get(id=BestValues.objects.all()[check_data.start_point].id)
-
-        tmp.symbol = g_symbol
-        tmp.best_price = best_price
-        tmp.best_bid = orderbook['bid'][0]['price']
-        tmp.best_ask = orderbook['ask'][0]['price']
-        tmp.timestamp = datetime.now()
-        tmp.save()
+        # tmp.symbol = g_symbol
+        # tmp.best_price = best_price
+        # tmp.best_bid = orderbook['bid'][0]['price']
+        # tmp.best_ask = orderbook['ask'][0]['price']
+        # tmp.timestamp = datetime.now()
+        # tmp.save()
 
         # define next index into BestValues.objects.all()[0]
-        if check_data.start_point == 0:
-            check_data.start_point = 9
-        else:
-            check_data.start_point = check_data.start_point - 1  # next index
-        next_turn = BestValues.objects.get(id=BestValues.objects.all()[0].id)
-        next_turn.start_point = check_data.start_point
-        print(next_turn.start_point)
-        next_turn.save()
-        best_values = BestValues.objects.all()
+        # if check_data.start_point == 0:
+        #     check_data.start_point = 9
+        # else:
+        #     check_data.start_point = check_data.start_point - 1  # next index
+        # next_turn = BestValues.objects.get(id=BestValues.objects.all()[0].id)
+        # next_turn.start_point = check_data.start_point
+        # print(next_turn.start_point)
+        # next_turn.save()
+    best_values = BestValues.objects.all()
 
     data = {
         'title': g_symbol,
@@ -250,7 +442,7 @@ def order_check(request):
         # 'best_bid': max_bid,
         # 'best_ask': min_ask,
         'best_values': best_values,
-        'count': next_turn.start_point,
+        'count': best_values[0].start_point,
     }
     return render(request, "coins/check_orders.html", data)
 

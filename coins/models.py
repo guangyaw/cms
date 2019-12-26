@@ -1,5 +1,4 @@
 from django.db import models
-from datetime import datetime
 from django.utils import timezone
 
 # trade record sample
@@ -23,7 +22,7 @@ class TradeRecord(models.Model):
     quantity = models.CharField(max_length=30, default='', blank=True)
     price = models.CharField(max_length=30, default='', blank=True)
     fee = models.CharField(max_length=30, default='', blank=True)
-    timestamp = models.DateTimeField(max_length=50, default='', blank=True)
+    timestamp = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return self.symbol
@@ -35,6 +34,18 @@ class BestValues(models.Model):
     best_price = models.CharField(max_length=30, default='', blank=True)
     best_bid = models.CharField(max_length=30, default='', blank=True)
     best_ask = models.CharField(max_length=30, default='', blank=True)
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.symbol
+
+
+class PreOrder(models.Model):
+    symbol = models.CharField(max_length=20, default='', blank=True)
+    stop_point = models.IntegerField(default='20', blank=True)
+    base_amount = models.CharField(max_length=20, default='', blank=True)
+    end_amount = models.CharField(max_length=20, default='', blank=True)
+    status = models.CharField(max_length=20, default='', blank=True)
     timestamp = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
