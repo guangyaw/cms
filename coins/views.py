@@ -10,6 +10,8 @@ from decimal import *
 from django_q.models import Schedule
 import datetime
 # from django.utils import timezone
+# from django.utils.timezone import get_current_timezone
+
 
 class Client(object):
     def __init__(self, url, public_key, secret):
@@ -97,7 +99,7 @@ def check_open_and_auto_trade():
             y = TradeRecord.objects.get(clientOrderId=last_trade_id)
             y.now_status = 'filled'
             y.save()
-        print(last_trade_id)
+        #print(last_trade_id)
         eth_btc = client.get_symbol(g_symbol)
         # get trading balance
         eth_balance = 0.0
@@ -133,7 +135,7 @@ def check_open_and_auto_trade():
                     g_balance = eth_balance
                     client_order_id = uuid.uuid4().hex
 
-                    order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][2]['price'])) / 2
+                    order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][3]['price'])) / 2
                     best_price = Decimal(order_avg)
 
                     btc_balance_toETH = round(btc_balance / float(best_price), 4) - float(eth_btc['quantityIncrement'])
@@ -141,7 +143,7 @@ def check_open_and_auto_trade():
             else:
                 # buy
                 if btc_balance_toETH >= float(eth_btc['quantityIncrement']):
-                    order_avg = (Decimal(orderbook['bid'][2]['price']) + Decimal(orderbook['ask'][0]['price'])) / 2
+                    order_avg = (Decimal(orderbook['bid'][3]['price']) + Decimal(orderbook['ask'][0]['price'])) / 2
                     best_price = Decimal(order_avg)
 
                     g_side = 'buy'
@@ -228,22 +230,20 @@ def auto_trade():
     my_profile = Profile.objects.get(user__username='guangyaw')
     client = Client("https://api.hitbtc.com", my_profile.api_key, my_profile.secret_no)
     eth_btc = client.get_symbol(g_symbol)
-
     orderbook = client.get_orderbook(g_symbol)
     # set
-    order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][0]['price'])) / 2
-    best_price = Decimal(order_avg)
+    order_avg = (float(orderbook['bid'][0]['price']) + float(orderbook['ask'][0]['price']))/2
+    best_price = order_avg
 
     print('Current price: %s' % (best_price,))
-
+    #
     best_counts = BestValues.objects.all().count()
     if best_counts < 10:
-        print(type(orderbook["timestamp"]))
-        # tmptime = datetime.strptime(orderbook['bid']["timestamp"].isoformat(), '%Y-%m-%d %H:%M:%S.%f')
-        BestValues.objects.create(symbol=g_symbol, best_price=best_price,
+        #print(best_counts)
+        BestValues.objects.create(symbol=g_symbol, best_price=str(best_price),
                                   best_bid=orderbook['bid'][0]['price'],
                                   best_ask=orderbook['ask'][0]['price'],
-                                  timestamp=datetime.datetime.now)
+                                  timestamp=datetime.datetime.now())
     else:
         check_data = BestValues.objects.get(id=BestValues.objects.all()[0].id)
         if check_data.start_point == 99:
@@ -267,9 +267,10 @@ def auto_trade():
             check_data.start_point = check_data.start_point - 1  # next index
         next_turn = BestValues.objects.get(id=BestValues.objects.all()[0].id)
         next_turn.start_point = check_data.start_point
-        print(next_turn.start_point)
+        # print(next_turn.start_point)
         next_turn.save()
 
+    # print('should into check_open_and_auto_trade ')
     check_open_and_auto_trade()
 
 
@@ -303,17 +304,19 @@ def auto_trade_start(request):
             base_amount = btc_balance_toETH
         else:
             base_amount = eth_balance
-        PreOrder.objects.create(symbol=g_symbol, base_amount=base_amount, status='running',
-                                timestamp=datetime.datetime.now())
-        now = datetime.datetime.now()
-        next_turn = now + datetime.timedelta(seconds=10)
+        print('PreOrder create')
+        now_time = datetime.datetime.now()
+
         Schedule.objects.create(
             func='coins.views.auto_trade',
             name='send_auto_trade',
             repeats=-1,
             schedule_type=Schedule.MINUTES,
-            next_run=next_turn
+            # minutes=1,
+            # next_run=next_turn
         )
+        PreOrder.objects.create(symbol=g_symbol, base_amount=str(base_amount), status='running',
+                                timestamp=now_time)
 
         return HttpResponse('auto trade start')
 
@@ -350,7 +353,7 @@ def auto_trade_stop(request):
         print(end_amount)
         x = PreOrder.objects.get(status='running')
         x.status = 'stop'
-        x.end_amount = end_amount
+        x.end_amount = str(end_amount)
         x.save()
 
     return HttpResponse('auto trade stop')

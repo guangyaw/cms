@@ -23,7 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '(a+916@*vd2n(a04l3mu)(09bln$qex&^zq@0dsri5(=^kv)br'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['cms.twshop.asia', '127.0.0.1']
 
@@ -182,8 +182,8 @@ Q_CLUSTER = {
     'name': 'DjangORM',
     'workers': 1,
     'timeout': 1800,
-    'retry': 120,
-    'queue_limit': 50,
+    'retry': 20,
+    'queue_limit': 2,
     'bulk': 10,
     'orm': 'default'
 }
