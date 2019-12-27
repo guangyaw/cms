@@ -128,80 +128,41 @@ def check_open_and_auto_trade():
             if check_point < target_rate:
                 print('wait for user handle')
                 return
-            orderbook = client.get_orderbook(g_symbol)
-            if eth_balance > btc_balance_toETH:
-                # sell
-                if eth_balance >= float(eth_btc['quantityIncrement']):
-                    g_side = 'sell'
-                    g_balance = eth_balance
-                    client_order_id = uuid.uuid4().hex
+        orderbook = client.get_orderbook(g_symbol)
+        if eth_balance > btc_balance_toETH:
+            # sell
+            if eth_balance >= float(eth_btc['quantityIncrement']):
+                g_side = 'sell'
+                g_balance = eth_balance
+                client_order_id = uuid.uuid4().hex
 
-                    order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][17]['price'])) / 2
-                    best_price = Decimal(order_avg)
+                order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][25]['price'])) / 2
+                best_price = Decimal(order_avg)
 
-                    btc_balance_toETH = round(btc_balance / float(best_price), 4) - float(eth_btc['quantityIncrement'])
-                    print("Selling at %s" % best_price)
-            else:
-                # buy
-                if btc_balance_toETH >= float(eth_btc['quantityIncrement']):
-                    order_avg = (Decimal(orderbook['bid'][2]['price']) + Decimal(orderbook['ask'][0]['price'])) / 2
-                    best_price = Decimal(order_avg)
+                btc_balance_toETH = round(btc_balance / float(best_price), 4) - float(eth_btc['quantityIncrement'])
+                print("Selling at %s" % best_price)
+        else:
+            # buy
+            if btc_balance_toETH >= float(eth_btc['quantityIncrement']):
+                order_avg = (Decimal(orderbook['bid'][2]['price']) + Decimal(orderbook['ask'][0]['price'])) / 2
+                best_price = Decimal(order_avg)
 
-                    g_side = 'buy'
-                    g_balance = btc_balance_toETH
-                    client_order_id = uuid.uuid4().hex
-                    print("buy at %s" % best_price)
+                g_side = 'buy'
+                g_balance = btc_balance_toETH
+                client_order_id = uuid.uuid4().hex
+                print("buy at %s" % best_price)
 
-            print(check_last.price)
-            order = client.new_order(client_order_id, g_symbol, g_side, g_balance, best_price)
-            if 'error' not in order:
-                if order['status'] == 'filled':
-                    print("Order filled", order)
-                elif order['status'] == 'new' or order['status'] == 'partiallyFilled':
-                    print("Waiting order...")
+        order = client.new_order(client_order_id, g_symbol, g_side, g_balance, best_price)
+        if 'error' not in order:
+            if order['status'] == 'filled':
+                print("Order filled", order)
+            elif order['status'] == 'new' or order['status'] == 'partiallyFilled':
+                print("Waiting order...")
 
-                TradeRecord.objects.create(clientOrderId=client_order_id, symbol=g_symbol, side=g_side,
-                                           quantity=g_balance, price=best_price, now_status=order['status'])
-            else:
-                print(order['error'])
-        else:#direct start
-            print('debug point2')
-            print('check_open_and_auto_trade: direct start')
-            base_x = PreOrder.objects.get(status='running')
-            target_rate = float(100 - base_x.stop_point)
-            orderbook = client.get_orderbook(g_symbol)
-            order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][0]['price'])) / 2
-            best_price = Decimal(order_avg)
-            btc_balance_toETH = round(btc_balance / float(best_price), 4) - float(eth_btc['quantityIncrement'])
-            print("check_open_and_auto_trade: price at %s" % best_price)
-
-            if eth_balance > btc_balance_toETH:
-                # sell
-                if eth_balance >= float(eth_btc['quantityIncrement']):
-                    g_side = 'sell'
-                    g_balance = eth_balance
-                    client_order_id = uuid.uuid4().hex
-                    order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][17]['price'])) / 2
-                    best_price = Decimal(order_avg)
-            else:
-                # buy
-                if btc_balance_toETH >= float(eth_btc['quantityIncrement']):
-                    g_side = 'buy'
-                    g_balance = btc_balance_toETH
-                    client_order_id = uuid.uuid4().hex
-                    print("buy at %s" % best_price)
-
-            order = client.new_order(client_order_id, g_symbol, g_side, g_balance, best_price)
-            if 'error' not in order:
-                if order['status'] == 'filled':
-                    print("Order filled", order)
-                elif order['status'] == 'new' or order['status'] == 'partiallyFilled':
-                    print("Waiting order...")
-
-                TradeRecord.objects.create(clientOrderId=client_order_id, symbol=g_symbol, side=g_side,
-                                           quantity=g_balance, price=best_price, now_status=order['status'])
-            else:
-                print(order['error'])
+            TradeRecord.objects.create(clientOrderId=client_order_id, symbol=g_symbol, side=g_side,
+                                       quantity=g_balance, price=best_price, now_status=order['status'])
+        else:
+            print(order['error'])
 
     else:
         if TradeRecord.objects.filter(now_status='new').exists():
