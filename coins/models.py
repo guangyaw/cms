@@ -21,6 +21,7 @@ class TradeRecord(models.Model):
     side = models.CharField(max_length=20, default='', blank=True)
     quantity = models.CharField(max_length=30, default='', blank=True)
     price = models.CharField(max_length=30, default='', blank=True)
+    total = models.CharField(max_length=30, default='', blank=True)
     fee = models.CharField(max_length=30, default='', blank=True)
     now_status = models.CharField(max_length=30, default='default', blank=True)
     wait_counter = models.IntegerField(default='0', blank=True)
