@@ -106,7 +106,7 @@ def check_open_and_auto_trade():
         order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][0]['price'])) / 2
         best_price = Decimal(order_avg)
 
-        btc_balance_toETH = round(btc_balance / float(float(best_price)*1.0002), 4)
+        btc_balance_toETH = btc_balance*0.995 / float(best_price)
         print('check_open_and_auto_trade: BTC balance in ETH: %s ' % (btc_balance_toETH,))
         print('check_open_and_auto_trade: ETH balance: %s' % eth_balance)
         # check last trade and check limit
@@ -133,14 +133,14 @@ def check_open_and_auto_trade():
                 client_order_id = uuid.uuid4().hex
 
                 # order_avg = (Decimal(orderbook['bid'][0]['price']) + Decimal(orderbook['ask'][25]['price'])) / 2
-                best_price = float(orderbook['ask'][12]['price'])
+                best_price = float(orderbook['ask'][13]['price'])
 
                 #btc_balance_toETH = round(btc_balance / float(best_price), 4) - float(eth_btc['quantityIncrement'])
                 print("Selling at %s" % best_price)
         else:
             # buy
             if btc_balance_toETH >= float(eth_btc['quantityIncrement']):
-                order_avg = (Decimal(orderbook['bid'][2]['price']) + Decimal(orderbook['ask'][0]['price'])) / 2
+                order_avg = (Decimal(orderbook['bid'][3]['price']) + Decimal(orderbook['ask'][0]['price'])) / 2
                 best_price = Decimal(order_avg)
 
                 g_side = 'buy'
